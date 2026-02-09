@@ -54,6 +54,20 @@ impl Format {
         }
     }
 
+    /// Get icon for this format
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Format::Docx => "📄",
+            Format::Xlsx => "📊",
+            Format::Pptx => "📽️",
+            Format::Markdown => "📝",
+            Format::Html => "🌐",
+            Format::Txt => "📋",
+            Format::Pdf => "📕",
+            Format::Csv => "📊",
+        }
+    }
+
     /// Get display name with icon
     pub fn display_name(&self) -> &'static str {
         match self {
@@ -146,19 +160,16 @@ pub fn get_output_formats(input: Format) -> Vec<ConversionPath> {
         ],
         Format::Markdown => vec![
             ConversionPath { from: input, to: Format::Html, engine: Engine::Pandoc, recommended: true },
-            ConversionPath { from: input, to: Format::Pdf, engine: Engine::Pandoc, recommended: false },
             ConversionPath { from: input, to: Format::Docx, engine: Engine::Pandoc, recommended: false },
             ConversionPath { from: input, to: Format::Txt, engine: Engine::Pandoc, recommended: false },
         ],
         Format::Html => vec![
             ConversionPath { from: input, to: Format::Markdown, engine: Engine::Pandoc, recommended: true },
-            ConversionPath { from: input, to: Format::Pdf, engine: Engine::Pandoc, recommended: false },
             ConversionPath { from: input, to: Format::Docx, engine: Engine::Pandoc, recommended: false },
             ConversionPath { from: input, to: Format::Txt, engine: Engine::Pandoc, recommended: false },
         ],
         Format::Txt => vec![
             ConversionPath { from: input, to: Format::Html, engine: Engine::Pandoc, recommended: true },
-            ConversionPath { from: input, to: Format::Pdf, engine: Engine::Pandoc, recommended: false },
             ConversionPath { from: input, to: Format::Docx, engine: Engine::Pandoc, recommended: false },
             ConversionPath { from: input, to: Format::Markdown, engine: Engine::Pandoc, recommended: false },
         ],

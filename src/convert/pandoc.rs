@@ -20,20 +20,6 @@ pub fn convert(
     output: &Path,
     timeout: Duration,
 ) -> Result<()> {
-    // Check if PDF output requires LaTeX
-    let output_ext = output.extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("");
-    
-    if output_ext == "pdf" {
-        // Check for LaTeX availability
-        if !has_latex() {
-            return Err(ConvError::ConversionFailed {
-                message: "PDF output requires LaTeX which is not installed".to_string(),
-                stderr: Some("Consider converting to HTML instead, or install LaTeX:\n  macOS: brew install --cask mactex\n  Linux: apt install texlive-latex-base\n  Windows: https://miktex.org/".to_string()),
-            });
-        }
-    }
 
     // Build command
     let mut cmd = Command::new(pandoc_path);

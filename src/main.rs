@@ -37,6 +37,10 @@ struct Args {
     #[arg(value_name = "FILE")]
     input: Option<PathBuf>,
 
+    /// Install required dependencies (LibreOffice, Pandoc)
+    #[arg(long)]
+    setup: bool,
+
     /// Skip dependency check
     #[arg(long, hide = true)]
     skip_dep_check: bool,
@@ -44,6 +48,12 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
+
+    // Handle --setup flag
+    if args.setup {
+        run_setup();
+        return;
+    }
 
     // Check dependencies first
     let deps = if args.skip_dep_check {
@@ -239,4 +249,93 @@ fn format_size(size: u64) -> String {
     } else {
         format!("{} B", size)
     }
+}
+
+/// Run setup to install dependencies
+fn run_setup() {
+    use std::process::Command;
+
+    println!("🔧 comfy-conv Setup\n");
+
+    // Check current status
+    let deps = check_dependencies().unwrap_or(deps::DependencyStatus {
+        libreoffice: None,
+        pandoc: None,
+    });
+
+    let mut missing = Vec::new();
+
+    if deps.has_libreoffice() {
+        println!("✅ LibreOffice: installed");
+    } else {
+        println!("❌ LibreOffice: not found");
+        missing.push("libreoffice");
+    }
+
+    if deps.has_pandoc() {
+        println!("✅ Pandoc: installed");
+    } else {
+        println!("❌ Pandoc: not found");
+        missing.push("pandoc");
+    }
+
+    if missing.is_empty() {
+        println!("\n✨ All dependencies are installed! You're ready to go.");
+        return;
+    }
+
+    println!("\n📦 Installing missing dependencies...\n");
+
+    #[cfg(target_os = "macos")]
+    {
+        // Use Homebrew on macOS
+        for dep in &missing {
+            let cmd = if *dep == "libreoffice" {
+                vec!["brew", "install", "--cask", "libreoffice"]
+            } else {
+                vec!["brew", "install", dep]
+            };
+
+            println!("Running: {}", cmd.join(" "));
+            let status = Command::new(cmd[0])
+                .args(&cmd[1..])
+                .status();
+
+            match status {
+                Ok(s) if s.success() => println!("✅ {} installed successfully\n", dep),
+                Ok(_) => println!("⚠️  {} installation may have failed\n", dep),
+                Err(e) => println!("❌ Failed to run brew: {}\n", e),
+            }
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        println!("On Linux, please install manually:");
+        for dep in &missing {
+            if *dep == "libreoffice" {
+                println!("  sudo apt install libreoffice  # Debian/Ubuntu");
+                println!("  sudo dnf install libreoffice  # Fedora");
+            } else {
+                println!("  sudo apt install {}  # Debian/Ubuntu", dep);
+                println!("  sudo dnf install {}  # Fedora", dep);
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        println!("On Windows, please install manually:");
+        for dep in &missing {
+            if *dep == "libreoffice" {
+                println!("  winget install LibreOffice.LibreOffice");
+                println!("  Or download from: https://www.libreoffice.org/");
+            } else {
+                println!("  winget install JohnMacFarlane.Pandoc");
+                println!("  Or download from: https://pandoc.org/installing.html");
+            }
+        }
+    }
+
+    println!("\n🎉 Setup complete! Run 'comfy-conv' to start converting.");
 }
