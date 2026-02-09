@@ -2,6 +2,7 @@
 //!
 //! Convert documents between common formats through a beautiful terminal interface.
 
+mod convert;
 mod deps;
 mod error;
 mod files;
@@ -86,11 +87,31 @@ fn main() {
     };
 
     // Run TUI
-    let app = App::new(files, deps);
+    let app = App::new(files, deps.clone());
     match app.run() {
         Ok(Some((file, conversion))) => {
-            println!("\n✨ Selected: {} → {}", file.name, conversion.to.extension());
-            println!("📝 Conversion engine implementation coming in Phase 4...\n");
+            // Perform the conversion
+            println!("\n⏳ Converting {} to {}...", file.name, conversion.to.extension());
+            
+            match convert::convert(&file, &conversion, &deps) {
+                Ok(output_path) => {
+                    let size = std::fs::metadata(&output_path)
+                        .map(|m| m.len())
+                        .unwrap_or(0);
+                    let size_str = format_size(size);
+                    
+                    println!("\n✅ Conversion complete!");
+                    println!("📕 {} ({})", output_path.file_name().unwrap_or_default().to_string_lossy(), size_str);
+                    println!("📂 {}", output_path.display());
+                }
+                Err(e) => {
+                    eprintln!("\n❌ Conversion failed: {}", e);
+                    for suggestion in e.suggestions() {
+                        eprintln!("   • {}", suggestion);
+                    }
+                    std::process::exit(1);
+                }
+            }
         }
         Ok(None) => {
             // User cancelled
@@ -99,5 +120,18 @@ fn main() {
             eprintln!("❌ Error: {}", e);
             std::process::exit(1);
         }
+    }
+}
+
+fn format_size(size: u64) -> String {
+    const KB: u64 = 1024;
+    const MB: u64 = 1024 * KB;
+
+    if size >= MB {
+        format!("{:.1} MB", size as f64 / MB as f64)
+    } else if size >= KB {
+        format!("{} KB", size / KB)
+    } else {
+        format!("{} B", size)
     }
 }
