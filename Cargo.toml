@@ -1,0 +1,42 @@
+[package]
+name = "comfy-conv"
+version = "0.1.0"
+edition = "2021"
+authors = ["comfy-conv contributors"]
+description = "An interactive CLI document converter"
+license = "MIT"
+readme = "README.md"
+keywords = ["cli", "document", "converter", "pdf", "docx"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+# TUI framework
+ratatui = "0.27"
+crossterm = "0.27"
+
+# CLI argument parsing
+clap = { version = "4", features = ["derive"] }
+
+# Error handling
+anyhow = "1"
+thiserror = "2"
+
+# Progress indicators
+indicatif = "0.17"
+
+# File system
+walkdir = "2"
+
+# Async runtime
+tokio = { version = "1", features = ["process", "rt-multi-thread", "macros", "time"] }
+
+# Time formatting
+chrono = "0.4"
+
+# Dependency detection
+which = "7"
+
+[profile.release]
+strip = true
+lto = true
+opt-level = "z"
