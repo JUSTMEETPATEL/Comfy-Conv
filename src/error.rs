@@ -69,12 +69,37 @@ impl ConvError {
                     "Supported formats: docx, xlsx, pptx, md, html, txt, pdf"
                 )]
             }
-            ConvError::ConversionFailed { stderr, .. } => {
-                let mut suggestions = vec!["Check that the file is not corrupted".into()];
+            ConvError::ConversionFailed { stderr, message } => {
+                let mut suggestions = Vec::new();
+                
+                // Check for LaTeX-related errors
+                if message.contains("LaTeX") {
+                    suggestions.push("Install LaTeX: brew install --cask mactex (macOS)".into());
+                    suggestions.push("Or convert to HTML instead of PDF".into());
+                    return suggestions;
+                }
+                
+                // Parse stderr for hints
                 if let Some(err) = stderr {
                     if err.contains("password") {
-                        suggestions.insert(0, "Remove password protection from the file".into());
+                        suggestions.push("Remove password protection from the file".into());
                     }
+                    if err.contains("LaTeX") || err.contains("pdflatex") {
+                        suggestions.push("Install LaTeX for PDF generation".into());
+                        suggestions.push("Or convert to HTML instead".into());
+                    }
+                    // Include stderr lines that look like suggestions
+                    for line in err.lines() {
+                        if line.trim().starts_with("macOS:") || 
+                           line.trim().starts_with("Linux:") ||
+                           line.trim().starts_with("Windows:") {
+                            suggestions.push(line.trim().to_string());
+                        }
+                    }
+                }
+                
+                if suggestions.is_empty() {
+                    suggestions.push("Check that the file is not corrupted".into());
                 }
                 suggestions
             }

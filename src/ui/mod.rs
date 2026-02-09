@@ -5,4 +5,5 @@
 pub mod app;
 pub mod file_picker;
 pub mod format_picker;
+pub mod progress;
 pub mod theme;
