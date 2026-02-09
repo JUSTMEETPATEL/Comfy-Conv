@@ -6,9 +6,11 @@ mod deps;
 mod error;
 mod files;
 mod formats;
+mod ui;
 
 use crate::deps::{check_dependencies, libreoffice_install_hint, pandoc_install_hint};
 use crate::error::ConvError;
+use crate::ui::app::App;
 use clap::Parser;
 use std::path::PathBuf;
 
@@ -30,7 +32,12 @@ fn main() {
     let args = Args::parse();
 
     // Check dependencies first
-    if !args.skip_dep_check {
+    let deps = if args.skip_dep_check {
+        deps::DependencyStatus {
+            libreoffice: Some("skipped".to_string()),
+            pandoc: Some("skipped".to_string()),
+        }
+    } else {
         match check_dependencies() {
             Ok(status) => {
                 if !status.has_libreoffice() {
@@ -45,6 +52,7 @@ fn main() {
                         pandoc_install_hint()
                     );
                 }
+                status
             }
             Err(ConvError::NoEnginesAvailable) => {
                 eprintln!("❌ No conversion engines found!\n");
@@ -60,26 +68,32 @@ fn main() {
                 std::process::exit(1);
             }
         }
-    }
+    };
 
     // Discover files
     let current_dir = std::env::current_dir().expect("Cannot access current directory");
-    match files::discover_files(&current_dir) {
-        Ok(files) => {
-            println!("\n📁 Found {} convertible file(s):\n", files.len());
-            for file in &files {
-                println!(
-                    "   {} {:>10}  {}",
-                    file.format.display_name(),
-                    file.size_display(),
-                    file.name
-                );
-            }
-            println!("\n✨ TUI interface coming in Phase 3...\n");
-        }
+    let files = match files::discover_files(&current_dir) {
+        Ok(files) => files,
         Err(ConvError::NoFilesFound) => {
-            println!("\n📭 No convertible files found in current directory.\n");
-            println!("Supported formats: docx, xlsx, pptx, md, html, txt, pdf");
+            eprintln!("\n📭 No convertible files found in current directory.\n");
+            eprintln!("Supported formats: docx, xlsx, pptx, md, html, txt, pdf");
+            std::process::exit(0);
+        }
+        Err(e) => {
+            eprintln!("❌ Error: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    // Run TUI
+    let app = App::new(files, deps);
+    match app.run() {
+        Ok(Some((file, conversion))) => {
+            println!("\n✨ Selected: {} → {}", file.name, conversion.to.extension());
+            println!("📝 Conversion engine implementation coming in Phase 4...\n");
+        }
+        Ok(None) => {
+            // User cancelled
         }
         Err(e) => {
             eprintln!("❌ Error: {}", e);
