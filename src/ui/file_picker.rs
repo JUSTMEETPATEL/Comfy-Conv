@@ -74,23 +74,28 @@ impl FilePicker {
             .files
             .iter()
             .map(|file| {
-                let icon = file.format.display_name();
+                let icon = file.format.icon();
+                let name = &file.name;
                 let size = file.size_display();
                 let modified = file.modified_display();
                 
                 let line = Line::from(vec![
                     Span::raw("  "),
                     Span::styled(
-                        format!("{:<14}", icon),
+                        format!("{} ", icon),
+                        theme::muted(),
+                    ),
+                    Span::styled(
+                        format!("{:<30}", name),
                         Style::default().fg(theme::WHITE),
                     ),
                     Span::styled(
-                        format!("{:>10}", size),
+                        format!("{:>8}", size),
                         theme::muted(),
                     ),
                     Span::raw("  "),
                     Span::styled(
-                        format!("{:<15}", modified),
+                        modified,
                         theme::muted(),
                     ),
                 ]);
