@@ -89,19 +89,57 @@ impl App {
                 }
 
                 match &mut self.state {
-                    AppState::SelectFile(picker) => match key.code {
-                        KeyCode::Up | KeyCode::Char('k') => picker.previous(),
-                        KeyCode::Down | KeyCode::Char('j') => picker.next(),
-                        KeyCode::Enter => {
-                            if let Some(file) = picker.selected().cloned() {
-                                let format_picker = FormatPicker::new(&file.path, file.format);
-                                self.state = AppState::SelectFormat(format_picker, file);
+                    AppState::SelectFile(picker) => {
+                        if picker.search_mode {
+                            match key.code {
+                                KeyCode::Char(c) => {
+                                    picker.search_query.push(c);
+                                    picker.update_filter();
+                                }
+                                KeyCode::Backspace => {
+                                    picker.search_query.pop();
+                                    picker.update_filter();
+                                }
+                                KeyCode::Up => picker.previous(),
+                                KeyCode::Down => picker.next(),
+                                KeyCode::Enter => {
+                                    if let Some(file) = picker.selected().cloned() {
+                                        let format_picker = FormatPicker::new(&file.path, file.format);
+                                        self.state = AppState::SelectFormat(format_picker, file);
+                                    }
+                                }
+                                KeyCode::Esc => {
+                                    picker.search_mode = false;
+                                }
+                                _ => {}
+                            }
+                        } else {
+                            match key.code {
+                                KeyCode::Char('/') => {
+                                    picker.search_mode = true;
+                                }
+                                KeyCode::Up | KeyCode::Char('k') => picker.previous(),
+                                KeyCode::Down | KeyCode::Char('j') => picker.next(),
+                                KeyCode::Enter => {
+                                    if let Some(file) = picker.selected().cloned() {
+                                        let format_picker = FormatPicker::new(&file.path, file.format);
+                                        self.state = AppState::SelectFormat(format_picker, file);
+                                    }
+                                }
+                                KeyCode::Esc => {
+                                    if !picker.search_query.is_empty() {
+                                        picker.search_query.clear();
+                                        picker.update_filter();
+                                    } else {
+                                        self.state = AppState::Exit;
+                                    }
+                                }
+                                KeyCode::Char('q') => {
+                                    self.state = AppState::Exit;
+                                }
+                                _ => {}
                             }
                         }
-                        KeyCode::Esc | KeyCode::Char('q') => {
-                            self.state = AppState::Exit;
-                        }
-                        _ => {}
                     },
                     AppState::SelectFormat(picker, file) => match key.code {
                         KeyCode::Up | KeyCode::Char('k') => picker.previous(),
@@ -170,7 +208,11 @@ impl App {
         match &mut self.state {
             AppState::SelectFile(picker) => {
                 picker.render(frame, chunks[0]);
-                render_hints(frame, chunks[1], &["↑↓/jk: navigate", "Enter: select", "q: quit"]);
+                if picker.search_mode {
+                    render_hints(frame, chunks[1], &["Type to search", "Enter: select", "Esc: exit search"]);
+                } else {
+                    render_hints(frame, chunks[1], &["↑↓/jk: navigate", "/: search", "Enter: select", "Esc/q: quit"]);
+                }
             }
             AppState::SelectFormat(picker, _) => {
                 picker.render(frame, chunks[0]);

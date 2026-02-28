@@ -14,8 +14,11 @@ use ratatui::{
 
 /// File picker state
 pub struct FilePicker {
-    pub files: Vec<FileInfo>,
+    pub all_files: Vec<FileInfo>,
+    pub filtered_files: Vec<FileInfo>,
     pub state: ListState,
+    pub search_query: String,
+    pub search_mode: bool,
 }
 
 impl FilePicker {
@@ -24,18 +27,24 @@ impl FilePicker {
         if !files.is_empty() {
             state.select(Some(0));
         }
-        Self { files, state }
+        Self { 
+            all_files: files.clone(),
+            filtered_files: files, 
+            state,
+            search_query: String::new(),
+            search_mode: false,
+        }
     }
 
     /// Move selection up
     pub fn previous(&mut self) {
-        if self.files.is_empty() {
+        if self.filtered_files.is_empty() {
             return;
         }
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.files.len() - 1
+                    self.filtered_files.len() - 1
                 } else {
                     i - 1
                 }
@@ -47,12 +56,12 @@ impl FilePicker {
 
     /// Move selection down
     pub fn next(&mut self) {
-        if self.files.is_empty() {
+        if self.filtered_files.is_empty() {
             return;
         }
         let i = match self.state.selected() {
             Some(i) => {
-                if i >= self.files.len() - 1 {
+                if i >= self.filtered_files.len() - 1 {
                     0
                 } else {
                     i + 1
@@ -65,13 +74,34 @@ impl FilePicker {
 
     /// Get currently selected file
     pub fn selected(&self) -> Option<&FileInfo> {
-        self.state.selected().and_then(|i| self.files.get(i))
+        self.state.selected().and_then(|i| self.filtered_files.get(i))
+    }
+
+    /// Update filtered list based on search query
+    pub fn update_filter(&mut self) {
+        if self.search_query.is_empty() {
+            self.filtered_files = self.all_files.clone();
+        } else {
+            let query = self.search_query.to_lowercase();
+            self.filtered_files = self.all_files
+                .iter()
+                .filter(|f| f.name.to_lowercase().contains(&query))
+                .cloned()
+                .collect();
+        }
+        
+        // Reset selection when filtering
+        if self.filtered_files.is_empty() {
+            self.state.select(None);
+        } else {
+            self.state.select(Some(0));
+        }
     }
 
     /// Render the file picker
     pub fn render(&mut self, frame: &mut Frame, area: Rect) {
         let items: Vec<ListItem> = self
-            .files
+            .filtered_files
             .iter()
             .map(|file| {
                 let icon = file.format.icon();
@@ -104,13 +134,19 @@ impl FilePicker {
             })
             .collect();
 
+        let title = if self.search_mode || !self.search_query.is_empty() {
+            format!(" Select a file (Search: {}{}) ", self.search_query, if self.search_mode { "_" } else { "" })
+        } else {
+            " Select a file to convert ".to_string()
+        };
+
         let list = List::new(items)
             .block(
                 Block::default()
-                    .title(" Select a file to convert ")
+                    .title(title)
                     .title_style(Style::default().fg(theme::WHITE).add_modifier(Modifier::BOLD))
                     .borders(Borders::ALL)
-                    .border_style(theme::border_focused()),
+                    .border_style(if self.search_mode { theme::selected() } else { theme::border_focused() }),
             )
             .highlight_style(theme::selected())
             .highlight_symbol("> ");
