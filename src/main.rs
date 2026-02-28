@@ -44,6 +44,10 @@ struct Args {
     /// Skip dependency check
     #[arg(long, hide = true)]
     skip_dep_check: bool,
+
+    /// Update comfy-conv using Homebrew
+    #[arg(long, visible_alias = "upgrade")]
+    update: bool,
 }
 
 fn main() {
@@ -52,6 +56,12 @@ fn main() {
     // Handle --setup flag
     if args.setup {
         run_setup();
+        return;
+    }
+
+    // Handle --update flag
+    if args.update {
+        run_update();
         return;
     }
 
@@ -100,7 +110,7 @@ fn main() {
         Ok(files) => files,
         Err(ConvError::NoFilesFound) => {
             eprintln!("\n📭 No convertible files found in current directory.\n");
-            eprintln!("Supported formats: docx, xlsx, pptx, md, html, txt, pdf");
+            eprintln!("Supported formats: docx, xlsx, pptx, ppt, md, html, txt, pdf");
             std::process::exit(0);
         }
         Err(e) => {
@@ -338,4 +348,35 @@ fn run_setup() {
     }
 
     println!("\n🎉 Setup complete! Run 'comfy-conv' to start converting.");
+}
+
+/// Run update to upgrade comfy-conv
+fn run_update() {
+    use std::process::Command;
+
+    println!("🔄 Updating comfy-conv to the latest version...\n");
+
+    #[cfg(target_os = "macos")]
+    {
+        println!("Running: brew upgrade comfy-conv");
+        let status = Command::new("brew")
+            .args(["upgrade", "comfy-conv"])
+            .status();
+
+        match status {
+            Ok(s) if s.success() => println!("\n✅ comfy-conv updated successfully!"),
+            Ok(_) => println!("\n⚠️  Update may have failed or comfy-conv is already up to date."),
+            Err(e) => println!("\n❌ Failed to run brew: {}", e),
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        println!("On Linux, please update manually by pulling the latest release from GitHub.");
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        println!("On Windows, please update manually by pulling the latest release from GitHub.");
+    }
 }

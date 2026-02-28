@@ -10,6 +10,7 @@ pub enum Format {
     Docx,
     Xlsx,
     Pptx,
+    Ppt,
     Markdown,
     Html,
     Txt,
@@ -24,6 +25,7 @@ impl Format {
             "docx" => Some(Format::Docx),
             "xlsx" => Some(Format::Xlsx),
             "pptx" => Some(Format::Pptx),
+            "ppt" => Some(Format::Ppt),
             "md" | "markdown" => Some(Format::Markdown),
             "html" | "htm" => Some(Format::Html),
             "txt" | "text" => Some(Format::Txt),
@@ -46,6 +48,7 @@ impl Format {
             Format::Docx => "docx",
             Format::Xlsx => "xlsx",
             Format::Pptx => "pptx",
+            Format::Ppt => "ppt",
             Format::Markdown => "md",
             Format::Html => "html",
             Format::Txt => "txt",
@@ -60,6 +63,7 @@ impl Format {
             Format::Docx => "📄",
             Format::Xlsx => "📊",
             Format::Pptx => "📽️",
+            Format::Ppt => "📽️",
             Format::Markdown => "📝",
             Format::Html => "🌐",
             Format::Txt => "📋",
@@ -74,6 +78,7 @@ impl Format {
             Format::Docx => "📄 DOCX",
             Format::Xlsx => "📊 XLSX",
             Format::Pptx => "📽️  PPTX",
+            Format::Ppt => "📽️  PPT",
             Format::Markdown => "📝 Markdown",
             Format::Html => "🌐 HTML",
             Format::Txt => "📋 TXT",
@@ -88,6 +93,7 @@ impl Format {
             Format::Docx => "Microsoft Word Document",
             Format::Xlsx => "Microsoft Excel Spreadsheet",
             Format::Pptx => "Microsoft PowerPoint Presentation",
+            Format::Ppt => "Microsoft PowerPoint Presentation (Legacy)",
             Format::Markdown => "Markdown text format",
             Format::Html => "Web page format",
             Format::Txt => "Plain text",
@@ -98,7 +104,7 @@ impl Format {
 
     /// Check if this is an Office format (requires LibreOffice)
     pub fn is_office_format(&self) -> bool {
-        matches!(self, Format::Docx | Format::Xlsx | Format::Pptx)
+        matches!(self, Format::Docx | Format::Xlsx | Format::Pptx | Format::Ppt)
     }
 
     /// All supported input formats
@@ -107,6 +113,7 @@ impl Format {
             Format::Docx,
             Format::Xlsx,
             Format::Pptx,
+            Format::Ppt,
             Format::Markdown,
             Format::Html,
             Format::Txt,
@@ -154,7 +161,7 @@ pub fn get_output_formats(input: Format) -> Vec<ConversionPath> {
             ConversionPath { from: input, to: Format::Html, engine: Engine::LibreOffice, recommended: false },
             ConversionPath { from: input, to: Format::Csv, engine: Engine::LibreOffice, recommended: false },
         ],
-        Format::Pptx => vec![
+        Format::Pptx | Format::Ppt => vec![
             ConversionPath { from: input, to: Format::Pdf, engine: Engine::LibreOffice, recommended: true },
             ConversionPath { from: input, to: Format::Html, engine: Engine::LibreOffice, recommended: false },
         ],
